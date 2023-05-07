@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <dprintf.h>
-#include "core_pxe.h"
+#include "pxe.h"
 
 enum http_readdir_state {
     st_start,			/*  0 Initial state */

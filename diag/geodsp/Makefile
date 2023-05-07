@@ -19,7 +19,7 @@
 #
 
 include $(MAKEDIR)/embedded.mk
-coredir = $(topdir)/core/bios
+coredir = $(topdir)/core
 VPATH = $(SRC)
 
 BTARGET = geodsp1s.bin geodsp1s_f.bin geodspms.bin \
@@ -28,7 +28,7 @@ BTARGET = geodsp1s.bin geodsp1s_f.bin geodspms.bin \
 NASMOPT = -i $(coredir)/ -i $(SRC)/ -Ox -f bin -dBINFMT
 NASMOPT += -w+orphan-labels
 CFLAGS = -g -O
-LIBS = $(wildcard $(coredir)/*.inc)
+LIBS = $(coredir)/writehex.inc $(coredir)/macros.inc $(coredir)/diskboot.inc geodsplib.inc
 
 all: $(BTARGET)
 

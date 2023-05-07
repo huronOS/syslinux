@@ -4,16 +4,10 @@
 #include <klibc/compiler.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include <x86/regs.h>
 
-static inline __constfunc unsigned long cpu_has_eflags(unsigned long flags)
+static inline bool cpu_has_eflag(unsigned long flag)
 {
     unsigned long f1, f2;
-
-    if (__builtin_constant_p(flags)) {
-	if (!(flags & ~(unsigned long)KNOWN_EFLAGS))
-	    return flags;	/* We know we have them all */
-    }
 
     asm("pushf ; "
 	"pushf ; "
@@ -25,14 +19,9 @@ static inline __constfunc unsigned long cpu_has_eflags(unsigned long flags)
 	"pushf ; "
 	"pop %1 ; "
 	"popf"
-	: "=&r" (f1), "=&r" (f2) : "ri" (flags));
+	: "=r" (f1), "=r" (f2) : "ri" (flag));
 
-    return (f1 ^ f2) & flags;
-}
-
-static inline __constfunc bool cpu_has_eflag(unsigned long flag)
-{
-    return cpu_has_eflags(flag) != 0;
+    return !!((f1 ^ f2) & flag);
 }
 
 static inline uint64_t rdtsc(void)

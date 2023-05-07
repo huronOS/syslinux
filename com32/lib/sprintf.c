@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <limits.h>
 
 int sprintf(char *buffer, const char *format, ...)
 {
@@ -12,7 +11,7 @@ int sprintf(char *buffer, const char *format, ...)
     int rv;
 
     va_start(ap, format);
-    rv = vsnprintf(buffer, INT_MAX, format, ap);
+    rv = vsnprintf(buffer, ~(size_t) 0, format, ap);
     va_end(ap);
 
     return rv;

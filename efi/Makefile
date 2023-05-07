@@ -19,19 +19,34 @@ CC_FOR_BUILD ?= $(CC)
 # Upstream gnu-efi has old-style function definitions.
 CFLAGS += -Wno-strict-prototypes
 
-CORE_CSRC := $(sort $(shell find '$(core)' -name '*.c' -print))
+CORE_CSRC := $(sort $(wildcard $(core)/*.c $(core)/*/*.c $(core)/*/*/*.c))
 CORE_COBJ := $(subst $(core),$(OBJ)/../core,$(patsubst %.c,%.o,$(CORE_CSRC)))
 
 # We don't want to include any of the networking stack or the thread
 # code since it will be implemented completely differently for EFI.
-FILTERED_OBJS := $(OBJ)/../core/bios/% \
-		 $(patsubst $(core)/%,$(OBJ)/../core/%/%,\
-			$(shell find '$(core)' -type d -name tests))
+FILTERED_OBJS:= $(sort $(subst $(core),$(OBJ)/../core,$(patsubst %.c,%.o, \
+	$(wildcard $(core)/legacynet/*.c) \
+	$(wildcard $(core)/fs/pxe/*.c) \
+	$(wildcard $(core)/thread/*.c))))
 
-CORE_OBJS = $(filter-out $(FILTERED_OBJS),$(CORE_COBJ))
+# Don't include unit tests
+FILTERED_OBJS += $(subst $(core),$(OBJ)/../core, \
+	$(patsubst %.c,%.o,$(shell find $(core) -path "*/tests/*.c" -print)))
+
+# Don't include console objects
+CORE_OBJS = $(filter-out %hello.o %rawcon.o %plaincon.o %strcasecmp.o %bios.o \
+	%diskio_bios.o %ldlinux-c.o %isolinux-c.o %pxelinux-c.o \
+	%localboot.o %pxeboot.o \
+	$(FILTERED_OBJS),$(CORE_COBJ) $(CORE_SOBJ))
+
+CORE_OBJS += $(addprefix $(OBJ)/../core/, \
+	fs/pxe/pxe.o fs/pxe/tftp.o fs/pxe/urlparse.o fs/pxe/dhcp_option.o \
+	fs/pxe/ftp.o fs/pxe/ftp_readdir.o fs/pxe/http.o fs/pxe/http_readdir.o)
+
+LIBEFI_STRIPPED = $(objdir)/libefi_stripped.a
 
 LIB_OBJS = $(addprefix $(objdir)/com32/lib/,$(CORELIBOBJS)) \
-	$(LIBEFI)
+	$(LIBEFI_STRIPPED)
 
 CSRC = $(sort $(wildcard $(SRC)/*.c))
 OBJS = $(subst $(SRC)/,,$(filter-out %wrapper.o, $(patsubst %.c,%.o,$(CSRC))))
@@ -59,6 +74,13 @@ BTARGET  = syslinux.efi
 
 syslinux.so: $(OBJS) $(CORE_OBJS) $(LIB_OBJS)
 	$(LD) $(LDFLAGS) --strip-debug -o $@ $^ -lgnuefi -lefi
+
+$(LIBEFI_STRIPPED): $(LIBEFI)
+	cp $(LIBEFI) $(LIBEFI_STRIPPED)
+	ar x $(LIBEFI_STRIPPED) init.o
+	strip -N memset -N memcpy init.o
+	ar r $(LIBEFI_STRIPPED) init.o
+	rm init.o
 
 # We need to rename the .hash section because the EFI firmware
 # linker really doesn't like it.

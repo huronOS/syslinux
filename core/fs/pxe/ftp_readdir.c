@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <dprintf.h>
-#include "core_pxe.h"
+#include "pxe.h"
 
 static int dirtype(char type)
 {

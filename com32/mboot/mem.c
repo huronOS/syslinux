@@ -169,7 +169,7 @@ out:
 void mboot_make_memmap(void)
 {
     int i, nmap;
-    struct AddrRangeDesc *ard = NULL;
+    struct AddrRangeDesc *ard;
     uint32_t lowmem, highmem;
     uint32_t highrsvd;
 

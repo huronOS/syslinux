@@ -1,6 +1,6 @@
 #include <minmax.h>
 #include <net.h>
-#include "core_pxe.h"
+#include "pxe.h"
 #include "url.h"
 #include "tftp.h"
 

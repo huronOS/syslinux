@@ -8,8 +8,15 @@ core = $(topdir)/core
 # gnuefi sets up architecture specifics in ia32 or x86_64 sub directories
 # set up the LIBDIR and EFIINC for building for the appropriate architecture
 GCCOPT := $(call gcc_ok,-fno-stack-protector,)
-EFIINC = $(objdir)/include/efi
-LIBDIR  = $(objdir)/lib
+EFIINC = /usr/include/efi
+LIBDIR  = /usr/lib
+ifeq ($(DEB_HOST_ARCH)/$(ARCH),amd64/i386)
+	LIBDIR  = /usr/lib32
+endif
+ifeq ($(DEB_HOST_ARCH)/$(ARCH),i386/x86_64)
+	LIBDIR  = /usr/lib64
+endif
+
 
 ifeq ($(ARCH),i386)
 	ARCHOPT = -m32 -march=i386
@@ -25,6 +32,7 @@ FORMAT=efi-app-$(EFI_SUBARCH)
 
 CFLAGS = -I$(EFIINC) -I$(EFIINC)/$(EFI_SUBARCH) \
 		-DEFI_FUNCTION_WRAPPER -fPIC -fshort-wchar -ffreestanding \
+		-fcommon \
 		-Wall -I$(com32)/include -I$(com32)/include/sys \
 		-I$(core)/include -I$(core)/ $(ARCHOPT) \
 		-I$(com32)/lib/ -I$(com32)/libutil/include -std=gnu99 \
@@ -44,7 +52,7 @@ SFLAGS     = $(GCCOPT) $(GCCWARN) $(ARCHOPT) \
 	     -nostdinc -iwithprefix include \
 	     -I$(com32)/libutil/include -I$(com32)/include -I$(com32)/include/sys $(GPLINCLUDE)
 
-LIBEFI = $(objdir)/lib/libefi.a
+LIBEFI = $(LIBDIR)/libefi.a
 
 $(LIBEFI):
 	@echo Building gnu-efi for $(EFI_SUBARCH)

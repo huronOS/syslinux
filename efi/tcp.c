@@ -4,7 +4,7 @@
 
 #include "efi.h"
 #include "net.h"
-#include "core_pxe.h"
+#include "fs/pxe/pxe.h"
 
 extern EFI_GUID Tcp4ServiceBindingProtocol;
 extern EFI_GUID Tcp4Protocol;
