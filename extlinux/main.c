@@ -565,7 +565,7 @@ error:
 int ext2_fat_install_file(const char *path, int devfd, struct stat *rst)
 {
     char *file, *oldfile, *c32file;
-    int fd = -1, dirfd = -1;
+    int fd = -1, dir_fd = -1;
     int r1, r2, r3;
 
     r1 = asprintf(&file, "%s%sldlinux.sys",
@@ -579,8 +579,8 @@ int ext2_fat_install_file(const char *path, int devfd, struct stat *rst)
 	return 1;
     }
 
-    dirfd = open(path, O_RDONLY | O_DIRECTORY);
-    if (dirfd < 0) {
+    dir_fd = open(path, O_RDONLY | O_DIRECTORY);
+    if (dir_fd < 0) {
 	perror(path);
 	goto bail;
     }
@@ -609,7 +609,7 @@ int ext2_fat_install_file(const char *path, int devfd, struct stat *rst)
 	goto bail;
     }
 
-    close(dirfd);
+    close(dir_fd);
     close(fd);
 
     /* Look if we have the old filename */
@@ -640,8 +640,8 @@ int ext2_fat_install_file(const char *path, int devfd, struct stat *rst)
     return 0;
 
 bail:
-    if (dirfd >= 0)
-	close(dirfd);
+    if (dir_fd >= 0)
+	close(dir_fd);
     if (fd >= 0)
 	close(fd);
 
@@ -725,7 +725,7 @@ static int xfs_install_file(const char *path, int devfd, struct stat *rst)
 {
     static char file[PATH_MAX + 1];
     static char c32file[PATH_MAX + 1];
-    int dirfd = -1;
+    int dir_fd = -1;
     int fd = -1;
     int retval;
 
@@ -734,8 +734,8 @@ static int xfs_install_file(const char *path, int devfd, struct stat *rst)
     snprintf(c32file, PATH_MAX + 1, "%s%sldlinux.c32", path,
 	     path[0] && path[strlen(path) - 1] == '/' ? "" : "/");
 
-    dirfd = open(path, O_RDONLY | O_DIRECTORY);
-    if (dirfd < 0) {
+    dir_fd = open(path, O_RDONLY | O_DIRECTORY);
+    if (dir_fd < 0) {
 	perror(path);
 	goto bail;
     }
@@ -765,10 +765,10 @@ static int xfs_install_file(const char *path, int devfd, struct stat *rst)
 	goto bail;
     }
 
-    close(dirfd);
+    close(dir_fd);
     close(fd);
 
-    dirfd = -1;
+    dir_fd = -1;
     fd = -1;
 
     fd = open(c32file, O_WRONLY | O_TRUNC | O_CREAT | O_SYNC,
@@ -787,13 +787,13 @@ static int xfs_install_file(const char *path, int devfd, struct stat *rst)
 
     close(fd);
 
-    sync();
+    syncfs(dir_fd);
 
     return 0;
 
 bail:
-    if (dirfd >= 0)
-	close(dirfd);
+    if (dir_fd >= 0)
+	close(dir_fd);
 
     if (fd >= 0)
 	close(fd);
@@ -1472,7 +1472,7 @@ static int open_device(const char *path, struct stat *st, char **_devname)
 static int install_loader(const char *path, int update_only)
 {
     struct stat st, fst;
-    int devfd, rv;
+    int devfd = -1, dir_fd = -1, rv;
     char *devname = NULL;
 
     devfd = open_device(path, &st, &devname);
@@ -1511,11 +1511,15 @@ static int install_loader(const char *path, int update_only)
 	return 1;
     }
 
-    sync();
+    /* Get path dir file descriptor to sync only target file system */
+    dir_fd = open(path, O_RDONLY | O_DIRECTORY);
+    close(dir_fd);
+
+    syncfs(dir_fd);
     rv = install_bootblock(devfd, devname);
     free(devname);
     close(devfd);
-    sync();
+    syncfs(dir_fd);
 
     return rv;
 }
